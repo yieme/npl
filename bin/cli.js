@@ -1,17 +1,35 @@
 #!/usr/local/bin/node
-/** Npl
+/** Node Package Linker to reduce redundant node_module files
  *
  *  @copyright  Copyright (C) 2015 by yieme
- *  @module     npl
- *  @param      {stream} stdin  - Standard input
- *  @return     {stream} stdout - Standard output
  */ 'use strict';
-var stdin = require('get-stdin')
-var npl = require('../index.js')
+var npl  = require('../index.js')
+var exec = require('sync-exec')
+var TIMEOUT = 600000 // 10 minutes
+var param   = []
 
-stdin(function (data) {
-  if (data) {
-    var result = npl(data)
-    console.log(JSON.stringify(result))
+function doExec(str) {
+  console.log('EXEC:', str)
+  var result = exec(str, TIMEOUT)
+  if (result.status) {
+    throw new Error(result.stderr)
   }
+  return result.stdout
+}
+
+var cache = doExec('npm config get cache')
+
+process.argv.forEach(function getArgv(val, index) {
+  if (val.indexOf(' ') >= 0) val = '"' + val + '"'
+  if (index >1) param.push(val)
 })
+if (param[0] != '--link-all') {
+  doExec('npm ' + param.join(' '))
+} else {
+  param.push('--link-all')
+}
+
+cache = cache.replace('.npm', '.npl')
+doExec('mkdir -p ' + cache)
+
+npl({cache: cache, param: param})

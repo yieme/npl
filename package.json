@@ -9,20 +9,27 @@
     "test": "mocha -R list test/*.js"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=0.10.0",
+    "npm": ">=1.2.14"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/yieme/npl"
   },
-  "keywords": ["npl"],
+  "keywords": [
+    "npl"
+  ],
   "author": "yieme",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/yieme/npl/issues"
   },
   "dependencies": {
-      "get-stdin": "^4.0.1"
+    "convar": "^1.1.6",
+    "noop": "^0.2.2",
+    "package-version": "^0.1.2",
+    "readdir": "0.0.13",
+    "sync-exec": "^0.5.0"
   },
   "devDependencies": {
     "chai": "~1.10.0"
