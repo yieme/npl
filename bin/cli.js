@@ -9,7 +9,7 @@ var TIMEOUT = 600000 // 10 minutes
 var param   = []
 
 function doExec(str) {
-  console.log('EXEC:', str)
+//  console.log('EXEC:', str)
   var result = exec(str, TIMEOUT)
   if (result.status) {
     throw new Error(result.stderr)
