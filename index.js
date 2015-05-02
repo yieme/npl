@@ -18,68 +18,85 @@ var TIMEOUT = 60000 // 1 minute
  */
 
 
- function doExec(str) {
-//   console.log('EXEC:', str)
-   var result = exec(str, TIMEOUT)
-   if (result.status) {
-     throw new Error(result.stderr)
-   }
-   return result.stdout
+
+function doExec(str) {
+ console.log('EXEC:', str)
+ var result = exec(str, TIMEOUT)
+ if (result.status) {
+   throw new Error(result.stderr)
  }
+ return result.stdout
+}
+
 
 
 function linkPackage(cacheDir, packageName) {
+  if (!packageName || packageName.substr(0,1) == '.' || packageName.substr(0,1) == '/') {
+    packageName = JSON.stringify(packageName)
+    throw new Error('missing or invalid packageName: ' + packageName)
+  }
   var packagePath = path.normalize('node_modules/' + packageName)
-//  console.log('cacheDir:', cacheDir, ', packageName:', packageName, ', packagePath:', packagePath)
   if (!fs.existsSync(packagePath)) {
     throw new Error('missing package linkPackage folder: ' + packagePath)
   }
   var stats = fs.lstatSync(packagePath)
-  if (!stats.isSymbolicLink()) { // not already a symbolic link so make it so
-    version(packagePath, function(err, version){
+  if (!stats.isSymbolicLink()) { // if not a symbolic link, make it one
+    version(packagePath, function(err, packageVersion) { // get package version
       if (err) throw err
       var cachePath = path.normalize(cacheDir + '/' + packageName)
-      doExec('mkdir -p ' + cachePath)
-      cachePath = path.normalize(cachePath + '/' + version)
+      doExec('mkdir -p "' + cachePath + '"')
+      cachePath = path.normalize(cachePath + '/' + packageVersion)
       if (fs.existsSync(cachePath)) {
-        doExec('rm -fR ' + packagePath)
+        doExec('rm -fR "' + packagePath + '"')
       } else {
-        doExec('mv ' + packagePath + ' ' + cachePath)
+        doExec('mv "' + packagePath + '" "' + cachePath + '"')
       }
-      doExec('ln -s ' + cachePath + ' ' + packagePath)
+      doExec('ln -s "' + cachePath + '" "' + packagePath + '"')
     })
   }
 }
 
-function npl(options) {
-  var i, packageName
-  options = options || {}
-  var cache = options.cache
-  if (!cache) {
-    throw new Error('missing npl cache folder')
-  }
-  cache = cache.replace("\n", '')
-  var packages = []
-  if (options.param.indexOf('--link-all') > 0) {
-    packages = readdir.readSync('node_modules', null, readdir.INCLUDE_DIRECTORIES + readdir.NON_RECURSIVE)
-    for (i=0; i < packages.length; i++) {
-      packageName = packages[i]
-      packages[i] = packageName.substr(0, packageName.length-1) // drop trailing /
-    }
-  } else {
-    for (i=1; i < options.param.length; i++) {
-      if (i) {
-        packageName = options.param[i]
-        if (packageName.substr(0,1) != '-') {
-          packages.push(packageName)
-        }
-      }
-    }
-  }
-  for (i=0; i < packages.length; i++) {
+
+
+function linkPackages(packages, cache) {
+  for (var i=0; i < packages.length; i++) {
     linkPackage(cache, packages[i])
   }
 }
+
+
+
+function getAllPackageNames() {
+  var readOptions = readdir.INCLUDE_DIRECTORIES + readdir.NON_RECURSIVE
+  var packages = readdir.readSync('node_modules', null, readOptions)
+  for (var i=0; i < packages.length; i++) {
+    var packageName = packages[i]
+    packages[i] = packageName.substr(0, packageName.length-1) // drop trailing slash /
+  }
+  return packages
+}
+
+
+
+ /**
+  * Node Package Linker to reduce redundant node_module files
+  *
+  * @module    npl
+  * @param  {string}  cache - Cache path
+  * @param  {string}  npm   - NPM parameters
+  * @param  {boolean} force - Force links
+  * @return {object}  npl
+  */
+function npl(cacheDir, packageList, linkAll) {
+  if (!cacheDir) {
+    throw new Error('missing npl cache folder')
+  }
+//  doExec('mkdir -p "' + cacheDir + '"')
+
+  var packages = (linkAll) ? getAllPackageNames() : packageList
+  linkPackages(packages, cacheDir)
+}
+
 
 
 module.exports = npl
