@@ -18,7 +18,7 @@ As a wrapper around ```npm```, use ```npl``` just as you would npm.
 npl i noop --save
 ```
 
-or install all modules for a project
+or install and link all modules for a project
 
 ```sh
 npl i
